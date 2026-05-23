@@ -1,4 +1,4 @@
-#### Private Serverless Galleria — Full Project Documentation
+# Private Serverless Galleria — Full Project Documentation
 Author: Ema Sena Architecture Type: AWS Serverless + CloudFront Secure Edge Architecture Status: Working Production Prototype
 
 ## 1. Project Overview

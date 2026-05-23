@@ -12,7 +12,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Description: Serverless web application for uploading files to S3
-      Handler: src/index.handler
+      Handler: bundle.handler
       Runtime: nodejs18.x
       CodeUri: package.zip
       MemorySize: 1536

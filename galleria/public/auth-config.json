@@ -1,0 +1,7 @@
+{
+  "cognitoDomain": "https://us-east-1q3go3n0gw.auth.us-east-1.amazoncognito.com",
+  "clientId": "6gumipelqra58i9ohf947kb427",
+  "galleryUrl": "https://c3ah1e34q5.execute-api.us-east-1.amazonaws.com/Prod/",
+  "uploaderUrl": "https://9y1anhxyi8.execute-api.us-east-1.amazonaws.com/Prod/",
+  "logoutUrl": "https://c3ah1e34q5.execute-api.us-east-1.amazonaws.com/Prod/"
+}

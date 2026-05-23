@@ -253,16 +253,10 @@ Automatic CloudFront refresh
 Production-grade AWS security
 End-to-end serverless architecture
 
-CI/CD
-
-GitHub Actions workflow:
-
-.github/workflows/deploy.yml
-
-Pipeline:
-
-Git Push
-→ GitHub Actions
+CloudFront Invalidation
+aws cloudfront create-invalidation \
+  --distribution-id YOUR_DISTRIBUTION_ID \
+  --paths "/*"ons
 → Build
 → Package
 → Deploy

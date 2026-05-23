@@ -253,11 +253,3 @@ Automatic CloudFront refresh
 Production-grade AWS security
 End-to-end serverless architecture
 
-CloudFront Invalidation
-aws cloudfront create-invalidation \
-  --distribution-id YOUR_DISTRIBUTION_ID \
-  --paths "/*"ons
-→ Build
-→ Package
-→ Deploy
-→ CloudFront Invalidation

@@ -1,255 +1,242 @@
-# Private Serverless Galleria — Full Project Documentation
-Author: Ema Sena Architecture Type: AWS Serverless + CloudFront Secure Edge Architecture Status: Working Production Prototype
+Private Serverless Galleria — Executive Project Summary
+Project Title
 
-### 1. Project Overview
-This project is a fully private serverless photo gallery platform built on AWS.
-The system includes:
-Secure authentication with Cognito
+Private Serverless Galleria
+AWS Secure Edge-Based Photo Gallery Platform
+
+Project Overview
+
+Private Serverless Galleria is a fully serverless, cloud-native photo gallery application built on AWS using a secure edge architecture.
+
+The platform was designed to provide:
+
+Secure authenticated image access
+Private image uploads
+CDN-based image delivery
+Fully private storage
+Global scalability
+Minimal infrastructure management
+
+The application uses Amazon CloudFront, Lambda@Edge, Cognito authentication, API Gateway, Lambda, and private S3 buckets to create a production-style media delivery platform.
+
+Main Project Goals
+Functional Goals
+Build a private photo gallery
+Support authenticated uploads
+Deliver images efficiently
+Protect media from public access
+Automatically refresh uploaded content
+Technical Goals
+Use AWS serverless services
+Implement CDN architecture
+Apply edge authentication
+Use scalable object storage
+Reduce operational overhead
+Security Goals
+Prevent direct S3 access
+Enforce HTTPS-only communication
+Secure upload endpoints
+Implement JWT-based authentication
+Apply IAM least privilege
+Final Architecture
+User Browser
+   │
+   ▼
 CloudFront CDN
-Lambda@Edge authorization
-Private uploader
-S3 image storage
-CloudFront cache invalidation
-Secure image delivery
-Fully serverless infrastructure
-The application allows authenticated users to:
-Log in securely
-Upload photos
-View private gallery images
-Access images through CloudFront only
-Automatically refresh CDN after upload
-
-### 2. Final Live URLs
-Gallery
-https://d3lewuugzhwqxx.cloudfront.net/
-Private Uploader
-https://d3lewuugzhwqxx.cloudfront.net/upload
-
-### 3. High-Level Architecture
-<img width="1047" height="555" alt="image" src="https://github.com/user-attachments/assets/ae68b814-4bc3-446c-bbf6-5f4be517b69b" />
-
-
-### 4. AWS Services Used
-Compute
-AWS Lambda
-Lambda@Edge
-CDN
-Amazon CloudFront
+   │
+   ├── Lambda@Edge Authentication
+   ├── Gallery Route
+   ├── Upload Route
+   │
+   ▼
+API Gateway
+   │
+   ├── Galleria Lambda
+   └── Uploader Lambda
+   │
+   ▼
+Private S3 Buckets
+AWS Services Used
+Category	Service
+CDN	Amazon CloudFront
+Authentication	Amazon Cognito
+Compute	AWS Lambda
+Edge Security	Lambda@Edge
+API Layer	Amazon API Gateway
+Storage	Amazon S3
+Security	IAM
+Monitoring	CloudWatch Logs
+Security Architecture
 Authentication
-Amazon Cognito
-API Layer
-Amazon API Gateway
-Storage
-Amazon S3
-Security
-IAM Roles
-IAM Policies
-Logging
-CloudWatch Logs
 
-### 5. CloudFront Distribution
-Distribution ID
-E2GB17O45KJQ3
-Domain
-https://d3lewuugzhwqxx.cloudfront.net
+Authentication is handled through Amazon Cognito and validated using Lambda@Edge before CloudFront serves protected content.
 
-### 6. Bucket Architecture
-Originals Bucket
-ema-galleria-originals-resize-v5-1779154323
-Purpose:
-Stores original uploaded images
-Security:
-Fully private
-Public access blocked
-Verification:
-aws s3api get-public-access-block \   --bucket ema-galleria-originals-resize-v5-1779154323
-Result:
-{   "PublicAccessBlockConfiguration": {     "BlockPublicAcls": true,     "IgnorePublicAcls": true,     "BlockPublicPolicy": true,     "RestrictPublicBuckets": true   } }
+JWT Cookie Flow
+User requests /upload
+→ CloudFront intercepts request
+→ Lambda@Edge validates JWT cookies
+→ If invalid:
+   Redirect to Cognito login
+→ User authenticates
+→ JWT cookies issued
+→ Access granted
+Private Storage Design
 
-### 7. Authentication Architecture
-Authentication Provider
-Amazon Cognito
-Login Flow
-User requests /upload   ↓ CloudFront Lambda@Edge checks cookies   ↓ If not authenticated:   Redirect to Cognito Hosted UI   ↓ User logs in   ↓ Cognito redirects to /parseauth   ↓ Lambda@Edge exchanges code for tokens   ↓ JWT cookies stored   ↓ User can access private routes
+All S3 buckets are configured as fully private.
 
-### 8. CloudFront Behaviors
+Security Controls
+S3 Block Public Access enabled
+No public bucket policies
+HTTPS-only access
+CloudFront-controlled delivery
+IAM least privilege permissions
+Upload Flow
+Authenticated User
+   ↓
+Uploader Frontend
+   ↓
+API Gateway
+   ↓
+Uploader Lambda
+   ↓
+Private S3 Bucket
+   ↓
+CloudFront Invalidation
+   ↓
+Updated Gallery
+CloudFront CDN Responsibilities
 
-Path	        Purpose
-/	Main        Gallery
-/upload*	    Private Uploader
-/parseauth	  Cognito callback
-/signout	    Logout
+CloudFront was used as:
 
-### 9. Lambda@Edge Authentication
-Function Used
-galleria-auth-edge-CheckAuthHandler
-Behavior Association
-Viewer Request
+CDN layer
+HTTPS endpoint
+Authentication gateway
+Edge authorization layer
+Secure image delivery mechanism
+CloudFront Behaviors
+Path	Purpose
+/	Main Gallery
+/upload*	Private Uploader
+/parseauth	Cognito callback
+/signout	Logout
+Key Technical Challenges Solved
+1. Upload Route Failure
+Problem
 
-### 10. Uploader Lambda
-Responsibilities
-Serve uploader UI
-Upload images to S3
-Create CloudFront invalidation
-Handle private upload API
+Uploads failed despite valid API responses.
 
-### 11. Final Uploader Lambda Code
-### Main Routing Logic
-if (   event.path.startsWith("/api/file/") ||   event.path.startsWith("/upload/api/file/") ) {   return fileRoute(event); } else {   return servePublic(event); }
+Root Cause
 
-#### Upload Key Extraction
-let key = event.path   .replace("/upload/api/file/", "")   .replace("/api/file/", "");
+Incorrect upload API path behind CloudFront behavior.
 
-#### Upload Route Fix
-if (event.path === "/" || event.path === "/upload") {   return serveIndex(event); }
-
-#### CloudFront Invalidation
-await cloudfront.send(new CreateInvalidationCommand({   DistributionId: DISTRIBUTION_ID,   InvalidationBatch: {     CallerReference: `${Date.now()}-${key}`,     Paths: {       Quantity: 1,       Items: ["/*"]     }   } }));
-
-### 12. Uploader Frontend
-Upload API Fix
-let uploadBaseUrl = '/upload/api/file/';
-This was critical because CloudFront behavior uses:
-/upload*
-
-### 13. CloudFront Configuration
-Uploader Behavior
-Path Pattern
-/upload*
-Origin
-uploader-origin
-Allowed Methods
-GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE
-Cache Policy
-CachingDisabled
-Origin Request Policy
-AllViewerExceptHostHeader
-
-### 14. IAM Permissions
-Required S3 Permissions
-{   "Effect": "Allow",   "Action": [     "s3:PutObject",     "s3:DeleteObject"   ],   "Resource": "*" }
-
-CloudFront Invalidation Permission
-{   "Effect": "Allow",   "Action": [     "cloudfront:CreateInvalidation"   ],   "Resource": "*" }
-
-### 15. IAM Role Discovery
-Command
-aws cloudformation describe-stack-resources \   --stack-name dev-galleria-emasena \   --query "StackResources[?ResourceType=='AWS::IAM::Role'].[PhysicalResourceId]" \   --output text
-Result
-dev-galleria-emasena-galleriaRole-GLCpFTYYte1y
-
-### 16. Upload Testing
-CLI Upload Test
-curl -i -X POST \   --data-binary @"$HOME/file.jpg" \   "https://d3lewuugzhwqxx.cloudfront.net/upload/api/file/test.jpg"
-
-### 17. CloudFront Invalidation
-Manual Invalidation
-aws cloudfront create-invalidation \   --distribution-id E2GB17O45KJQ3 \   --paths "/upload" "/upload/*"
-
-### 18. CloudWatch Logging
-Tail Logs
-aws logs tail /aws/lambda/dev-uploader-emasena-uploader-r7tufXs3dKil \   --follow
-
-### 19. Major Challenges Solved
-#### Challenge 1 — Upload Path Broken
-Symptom
-Error uploading. Max upload size is ~4MB
-Actual Cause
-Wrong upload API path.
-Uploader used:
-basePath + 'api/file/'
-But CloudFront behavior required:
-/upload/api/file/
 Fix
 let uploadBaseUrl = '/upload/api/file/';
+2. CloudFront 414 Errors
+Problem
 
-#### Challenge 2 — 414 CloudFront Error
-Symptom
-414 ERROR The request could not be satisfied.
+CloudFront returned redirect-loop errors.
+
 Cause
-CloudFront Function conflict + auth redirect loop.
-Fix
-Removed conflicting CloudFront Function
-Used only Lambda@Edge auth
-Cleared cookies
+
+Conflicting CloudFront functions and auth redirects.
+
+Resolution
+Removed conflicting function
+Standardized Lambda@Edge auth
 Reconfigured behaviors
+3. Not Found Errors
+Problem
 
-#### Challenge 3 — /upload Returned Not Found
-Symptom
+Uploader returned:
+
 {"message":"Not Found"}
-CloudWatch Error
-ENOENT: no such file or directory, open '/var/task/public/upload'
 Cause
-Uploader Lambda treated /upload as static file.
-Fix
-if (event.path === "/" || event.path === "/upload") {   return serveIndex(event); }
 
-#### Challenge 4 — key is not defined
-Error
+Lambda attempted to serve /upload as static file.
+
+Fix
+if (event.path === "/" || event.path === "/upload") {
+  return serveIndex(event);
+}
+4. Runtime Reference Errors
+Problem
 ReferenceError: key is not defined
 Cause
-Key extraction block accidentally removed during sed modifications.
-Fix
-let key = event.path   .replace("/upload/api/file/", "")   .replace("/api/file/", "");
 
-#### Challenge 5 — Environment Variables Missing
-Error
-aws: [ERROR]: argument --s3-bucket: expected one argument
-Cause
-CODE_BUCKET environment variable not exported.
-Fix
-export CODE_BUCKET=ema-galleria-code-1779145806 export DEST_BUCKET=ema-galleria-originals-resize-v5-1779154323 export USER=emasena
+Upload key extraction removed during modifications.
 
-### 20. Deployment Process
+Fix
+let key = event.path
+  .replace("/upload/api/file/", "")
+  .replace("/api/file/", "");
+Deployment Workflow
 Build
 npm run build
-
 Package
 npm run package
-
 Deploy
 npm run deploy
+CI/CD Pipeline
 
-### 21. Complete Deployment Script
-export CODE_BUCKET=ema-galleria-code-1779145806 export DEST_BUCKET=ema-galleria-originals-resize-v5-1779154323 export USER=emasena  rm -f uploader.zip package.zip packaged-template.yml bundle.js  npm run build  zip -r package.zip bundle.js public  npm run package npm run deploy
+GitHub Actions pipeline designed for:
 
-### 22. CI/CD Pipeline
-GitHub Actions Workflow
-name: Deploy Serverless Galleria  on:   push:     branches:       - main  jobs:   deploy:     runs-on: ubuntu-latest
+Git Push
+→ Build
+→ Package
+→ Deploy
+→ CloudFront Invalidation
+AI Image Tagging — Future Expansion
 
-### 23. AI Image Tagging Future Architecture
-Proposed Architecture
-Upload image → S3 originals bucket → Tagging Lambda → Amazon Rekognition DetectLabels → Save tags to DynamoDB → Searchable gallery
+Planned future architecture:
 
-### 24. Skills Demonstrated
+Upload Image
+→ S3
+→ Lambda Trigger
+→ Amazon Rekognition
+→ DynamoDB Metadata
+→ Searchable Gallery
+Skills Demonstrated
 AWS Skills
 Lambda
 Lambda@Edge
 CloudFront
 Cognito
 API Gateway
-IAM
 S3
+IAM
 CloudWatch
 Engineering Skills
-Debugging distributed systems
 CDN troubleshooting
 Edge authentication
-IAM permissions
-API routing
-Secure architecture
-Infrastructure troubleshooting
-Production deployment
-CLI automation
+Secure cloud architecture
+Distributed systems debugging
+Infrastructure automation
+Production troubleshooting
+Serverless architecture design
+Final Outcome
 
-### 25. Final Outcome
 The project successfully achieved:
+
 Fully private serverless gallery
-Secure uploader
-Authentication-protected CDN
-Private S3 architecture
-Dynamic uploads
-Automatic CloudFront refresh
+Secure uploader system
+Authentication-protected CDN delivery
+Private cloud storage
+Automated CDN refresh
 Production-grade AWS security
 End-to-end serverless architecture
+Live Application
+Gallery
 
+Private Serverless Galleria
+
+Uploader
+
+Private Uploader
+
+Author
+
+Ema Sena
+
+GitHub Repository
+
+Serverless Galleria Private Repository

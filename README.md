@@ -253,3 +253,9 @@ Automatic CloudFront refresh
 Production-grade AWS security
 End-to-end serverless architecture
 
+AWS Services Used
+Amazon CloudFront
+AWS Lambda
+Lambda@Edge
+Amazon Cognito
+Amazon API Gateway

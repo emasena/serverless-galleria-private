@@ -7,6 +7,21 @@
     <link rel="stylesheet" href="https://galleria-static.evanchiu.com/assets/css/main.css" />
     <noscript><link rel="stylesheet" href="https://galleria-static.evanchiu.com/assets/css/noscript.css" /></noscript>
   </head>
+  <script>
+async function deletePhoto(key) {
+  if (!confirm("Delete this photo?")) return;
+
+  const res = await fetch("/api/delete/" + key, {
+    method: "DELETE"
+  });
+
+  if (res.ok) {
+    location.reload();
+  } else {
+    alert("Delete failed");
+  }
+}
+</script>
   <body class="is-preload">
 
     <!-- Wrapper -->
@@ -16,9 +31,11 @@
           <header id="header">
             <h1><strong>Serverless Galleria</strong> by Evan Chiu</h1>
             <nav>
-              <ul>
-                <li><a href="#footer" class="icon solid fa-info-circle">About</a></li>
-              </ul>
+               <ul>
+    <li><a href="/upload" target="_blank">Upload</a></li>
+    <li><a href="/signout">Logout</a></li>
+    <li><a href="#footer" class="icon solid fa-info-circle">About</a></li>
+  </ul>
             </nav>
           </header>
 

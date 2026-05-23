@@ -1,0 +1,58 @@
+name: Deploy Serverless Galleria
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-east-1
+      CODE_BUCKET: ema-galleria-code-1779145806
+      DEST_BUCKET: ema-galleria-originals-resize-v5-1779154323
+      USER: emasena
+      CLOUDFRONT_DISTRIBUTION_ID: E2GB17O45KJQ3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Deploy uploader
+        working-directory: uploader
+        run: |
+          npm install
+          npm run build
+          perl -0pi -e "s|let uploadBaseUrl = basePath \\+ 'api/file/';|let uploadBaseUrl = '/upload/api/file/';|g" public/index.html
+          rm -f package.zip
+          zip -r package.zip bundle.js public
+          npm run package
+          npm run deploy
+
+      - name: Deploy galleria
+        working-directory: galleria
+        run: |
+          npm install
+          npm run build
+          cp galleria.zip package.zip
+          npm run package
+          npm run deploy
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id $CLOUDFRONT_DISTRIBUTION_ID \
+            --paths "/*"
+

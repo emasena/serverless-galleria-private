@@ -2,8 +2,13 @@ import { readFile } from "fs/promises";
 import { lookup } from "mime-types";
 import { join, resolve } from "path";
 import { done, put } from "serverless-galleria-util";
+import { CloudFrontClient, CreateInvalidationCommand } from "@aws-sdk/client-cloudfront";
 
 const DEST_BUCKET = process.env.DEST_BUCKET;
+const cloudfront = new CloudFrontClient({ region: "us-east-1" });
+const DISTRIBUTION_ID = "E2GB17O45KJQ3";
+
+
 
 export async function handler(event) {
   // Fail on mising config
@@ -12,7 +17,10 @@ export async function handler(event) {
     return done(500, '{"message":"Internal Server Error"}');
   }
 
-  if (event.path.startsWith("/api/file/")) {
+  if (
+  event.path.startsWith("/api/file/") ||
+  event.path.startsWith("/upload/api/file/")
+) {
     return fileRoute(event);
   } else {
     return servePublic(event);
@@ -22,7 +30,9 @@ export async function handler(event) {
 async function fileRoute(event) {
   console.log("Serving fileRoute");
   if (event.httpMethod === "POST") {
-    let key = event.path.replace("/api/file/", "");
+    let key = event.path
+      .replace("/upload/api/file/", "")
+      .replace("/api/file/", "");
 
     // Get the body data
     let body = event.body;
@@ -34,7 +44,25 @@ async function fileRoute(event) {
     try {
       await put(DEST_BUCKET, key, body);
 
-      let message = "Saved " + DEST_BUCKET + ":" + key;
+try {
+  await cloudfront.send(new CreateInvalidationCommand({
+    DistributionId: DISTRIBUTION_ID,
+    InvalidationBatch: {
+      CallerReference: `${Date.now()}-${key}`,
+      Paths: {
+        Quantity: 1,
+        Items: ["/*"]
+      }
+    }
+  }));
+
+  console.log("CloudFront invalidation created");
+} catch (invalidateError) {
+  console.error("CloudFront invalidation failed, but upload succeeded", invalidateError);
+}
+
+let message = "Saved " + DEST_BUCKET + ":" + key;
+
       console.log(message);
       return done(200, JSON.stringify({ message }));
     } catch (error) {
@@ -50,7 +78,7 @@ async function servePublic(event) {
   console.log(`Serving public for ${event.path}`);
   // Set urlPath
   let urlPath;
-  if (event.path === "/") {
+  if (event.path === "/" || event.path === "/upload") {
     return serveIndex(event);
   } else {
     urlPath = event.path;

@@ -31,7 +31,7 @@
     let drop = document.getElementById('drop');
     let list = document.getElementById('list');
     let basePath = '{{base_path}}'; // filled in by the lambda before serving this page
-    let uploadBaseUrl = basePath + 'api/file/';
+    let uploadBaseUrl = '/upload/api/file/';
 
     // Do nothing on drag events
     function cancel(e) {

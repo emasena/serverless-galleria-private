@@ -94,16 +94,16 @@ Create CloudFront invalidation
 Handle private upload API
 
 ## 11. Final Uploader Lambda Code
-# Main Routing Logic
+### Main Routing Logic
 if (   event.path.startsWith("/api/file/") ||   event.path.startsWith("/upload/api/file/") ) {   return fileRoute(event); } else {   return servePublic(event); }
 
-# Upload Key Extraction
+### Upload Key Extraction
 let key = event.path   .replace("/upload/api/file/", "")   .replace("/api/file/", "");
 
-# Upload Route Fix
+### Upload Route Fix
 if (event.path === "/" || event.path === "/upload") {   return serveIndex(event); }
 
-# CloudFront Invalidation
+### CloudFront Invalidation
 await cloudfront.send(new CreateInvalidationCommand({   DistributionId: DISTRIBUTION_ID,   InvalidationBatch: {     CallerReference: `${Date.now()}-${key}`,     Paths: {       Quantity: 1,       Items: ["/*"]     }   } }));
 
 ## 12. Uploader Frontend
@@ -151,7 +151,7 @@ Tail Logs
 aws logs tail /aws/lambda/dev-uploader-emasena-uploader-r7tufXs3dKil \   --follow
 
 ## 19. Major Challenges Solved
-# Challenge 1 — Upload Path Broken
+### Challenge 1 — Upload Path Broken
 Symptom
 Error uploading. Max upload size is ~4MB
 Actual Cause
@@ -163,7 +163,7 @@ But CloudFront behavior required:
 Fix
 let uploadBaseUrl = '/upload/api/file/';
 
-# Challenge 2 — 414 CloudFront Error
+### Challenge 2 — 414 CloudFront Error
 Symptom
 414 ERROR The request could not be satisfied.
 Cause
@@ -174,7 +174,7 @@ Used only Lambda@Edge auth
 Cleared cookies
 Reconfigured behaviors
 
-# Challenge 3 — /upload Returned Not Found
+### Challenge 3 — /upload Returned Not Found
 Symptom
 {"message":"Not Found"}
 CloudWatch Error
@@ -184,7 +184,7 @@ Uploader Lambda treated /upload as static file.
 Fix
 if (event.path === "/" || event.path === "/upload") {   return serveIndex(event); }
 
-# Challenge 4 — key is not defined
+### Challenge 4 — key is not defined
 Error
 ReferenceError: key is not defined
 Cause
@@ -192,7 +192,7 @@ Key extraction block accidentally removed during sed modifications.
 Fix
 let key = event.path   .replace("/upload/api/file/", "")   .replace("/api/file/", "");
 
-# Challenge 5 — Environment Variables Missing
+### Challenge 5 — Environment Variables Missing
 Error
 aws: [ERROR]: argument --s3-bucket: expected one argument
 Cause

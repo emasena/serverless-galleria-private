@@ -323,7 +323,7 @@ The project successfully achieved:
 
 # Author
 
-Ema Sena
+Emiliana Sena
 
 ## GitHub Repository
 
